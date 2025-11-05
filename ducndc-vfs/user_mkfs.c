@@ -24,7 +24,7 @@ _Static_assert(sizeof(struct superblock) == DUCNDC_FS_BLOCK_SIZE);
 static struct superblock *
 write_superblock(
 	int fd,
-	struct stat *fsstats
+	struct stat *fstats
 )
 {
 	struct superblock *sb = malloc(sizeof(struct superblock));
@@ -51,7 +51,7 @@ write_superblock(
 		nr_blocks - nr_istore_blocks - nr_ifree_blocks - nr_bfree_blocks;
 	memset(sb, 0, sizeof(struct superblock));
 	sb->info = (struct ducndc_fs_sb_info) {
-		.magic = htole32(DUCNDC_FS_MAGIC);
+		.magic = htole32(DUCNDC_FS_MAGIC),
         .nr_blocks = htole32(nr_blocks),
         .nr_inodes = htole32(nr_inodes),
         .nr_istore_blocks = htole32(nr_istore_blocks),
@@ -65,7 +65,7 @@ write_superblock(
 
 	if (ret != sizeof(struct superblock)) {
 		free(sb);
-		return NULL:
+		return NULL;
 	}
 
     printf(
@@ -252,7 +252,7 @@ end:
 }
 
 static int
-write_data_block(
+write_data_blocks(
 	int fd,
 	struct superblock *sb
 )

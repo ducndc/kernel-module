@@ -7,7 +7,7 @@
 #define DUCNDC_FS_BLOCK_SIZE	(1 << 12)
 
 #define DUCNDC_FS_MAX_EXTENTS \
-	((DUCNDC_FS_BLOCK_SIZE - sizeof(uint32_t)) / sizeof(struct vfs_extent))
+	((DUCNDC_FS_BLOCK_SIZE - sizeof(uint32_t)) / sizeof(struct ducndc_fs_extent))
 
 #define DUCNDC_FS_MAX_BLOCKS_PER_EXTENT	(8)
 #define DUCNDC_FS_MAX_SIZES_PER_EXTENT \
@@ -20,7 +20,7 @@
 #define DUCNDC_FS_FILE_NAME_LEN	(255)
 
 #define DUCNDC_FS_FILES_PER_BLOCK \
-	(DUCNDC_FS_BLOCK_SIZE / sizeof(struct vfs_file))
+	(DUCNDC_FS_BLOCK_SIZE / sizeof(struct ducndc_fs_file))
 
 #define DUCNDC_FS_FILES_PER_EXTENT \
 	(DUCNDC_FS_FILES_PER_BLOCK * DUCNDC_FS_MAX_BLOCKS_PER_EXTENT)
@@ -99,21 +99,21 @@ struct ducndc_fs_file {
 	char filename[DUCNDC_FS_FILE_NAME_LEN];
 };
 
-struct ducndc_dir_block {
+struct ducndc_fs_dir_block {
 	uint32_t nr_files;
 	struct ducndc_fs_file files[DUCNDC_FS_FILES_PER_BLOCK];
 };
 
 int 
 ducndc_fs_fill_super(
-	struct supper_block *sb, 
+	struct super_block *sb, 
 	void *data, 
 	int silent
 );
 
 void 
 ducndc_fs_kill_sb(
-	struct supper_block *sb
+	struct super_block *sb
 );
 
 int 
@@ -128,7 +128,7 @@ ducndc_fs_destroy_inode_cache(
 
 struct inode *
 ducndc_fs_iget(
-	struct supper_block *sb, 
+	struct super_block *sb, 
 	unsigned long ino
 );
 
@@ -170,11 +170,11 @@ struct ducndc_fs_sb_info {
 #ifdef __KERNEL__
     journal_t *journal;
     struct block_device *s_journal_bdev; /* v5.10+ external journal device */
-#if SIMPLEFS_AT_LEAST(6, 9, 0)
+#if DUCNDC_FS_AT_LEAST(6, 9, 0)
     struct file *s_journal_bdev_file; /* v6.11 external journal device */
-#elif SIMPLEFS_AT_LEAST(6, 7, 0)
+#elif DUCNDC_FS_AT_LEAST(6, 7, 0)
     struct bdev_handle *s_journal_bdev_handle; /* v6.7+ external journal device */
-#endif /* SIMPLEFS_AT_LEAST */
+#endif /* DUCNDC_FS_AT_LEAST */
 #endif /* __KERNEL__ */
 };
 

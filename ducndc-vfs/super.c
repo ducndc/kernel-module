@@ -11,6 +11,13 @@
 
 #include "ducndc_fs.h"
 
+struct dentry *ducndc_fs_mount(struct file_system_type *fs_type,
+                              int flags,
+                              const char *dev_name,
+                              void *data);
+
+void ducndc_fs_kill_sb(struct super_block *sb);
+
 static struct kmem_cache *ducndc_fs_inode_cache;
 
 int 
@@ -31,7 +38,7 @@ ducndc_fs_init_inode_cache(
 }
 
 void
-ducndc_destroy_inode_cache(
+ducndc_fs_destroy_inode_cache(
 	void
 )
 {
@@ -40,7 +47,7 @@ ducndc_destroy_inode_cache(
 }
 
 static struct inode *
-ducndc_alloc_inode(
+ducndc_fs_alloc_inode(
 	struct super_block *sb
 )
 {
@@ -62,7 +69,7 @@ ducndc_fs_destroy_inode(
 )
 {
 	struct ducndc_fs_inode_info *ci = DUCNDC_FS_INODE(inode);
-	kmem_cache_free(ducndc_fs_inode);
+	kmem_cache_free(ducndc_fs_inode_cache, ci);
 }
 
 static int 
@@ -74,9 +81,9 @@ ducndc_fs_write_inode(
 	struct ducndc_fs_inode *disk_inode;
 	struct ducndc_fs_inode_info *ci = DUCNDC_FS_INODE(inode);
 	struct super_block *sb = inode->i_sb;
-	struct ducndc_fs_sb_info *sbi = DUCNDC_FS_INODE(sb);
+	struct ducndc_fs_sb_info *sbi = DUCNDC_FS_SB(sb);
 	struct buffer_head *bh;
-	uint32_t ino = inode->i_io;
+	uint32_t ino = inode->i_ino;
 	uint32_t inode_block = (ino / DUCNDC_FS_INODES_PER_BLOCK) + 1;
 	uint32_t inode_shift = ino % DUCNDC_FS_INODES_PER_BLOCK;
 
@@ -95,7 +102,7 @@ ducndc_fs_write_inode(
 
 	disk_inode->i_mode = inode->i_mode;
 	disk_inode->i_uid = i_uid_read(inode);
-	disk_inode->i_gid = i_giu_read(inode);
+	disk_inode->i_gid = i_gid_read(inode);
 	disk_inode->i_size = inode->i_size;
 
 #if DUCNDC_FS_AT_LEAST(6, 6, 6)
@@ -264,7 +271,7 @@ ducndc_fs_statfs(
 {
 	struct super_block *sb = dentry->d_sb;
 	struct ducndc_fs_sb_info *sbi = DUCNDC_FS_SB(sb);
-	stat->f_type = DUCDC_FS_MAGIC;
+	stat->f_type = DUCNDC_FS_MAGIC;
 	stat->f_bsize = DUCNDC_FS_BLOCK_SIZE;
     stat->f_blocks = sbi->nr_blocks;
     stat->f_bfree = sbi->nr_free_blocks;
@@ -352,8 +359,8 @@ ducndc_fs_get_dev_journal(
         goto out_bdev;
     }
 
-    sb_block = SIMPLEFS_BLOCK_SIZE / blocksize;
-    offset = SIMPLEFS_BLOCK_SIZE % blocksize;
+    sb_block = DUCNDC_FS_BLOCK_SIZE / blocksize;
+    offset = DUCNDC_FS_BLOCK_SIZE % blocksize;
 
 #if DUCNDC_FS_AT_LEAST(6, 9, 0)
     set_blocksize(bdev_file, blocksize);
@@ -577,10 +584,10 @@ ducndc_fs_fill_super(
 	struct inode *root_inode = NULL;
 	int ret = 0, i;
 
-	sb->s_magic = DUCNDC_MAGIC;
+	sb->s_magic = DUCNDC_FS_MAGIC;
 	sb_set_blocksize(sb, DUCNDC_FS_BLOCK_SIZE);
 	sb->s_maxbytes = DUCNDC_FS_MAX_FILE_SIZE;
-	sb->s_op = &ducndc_fs_supper_ops;
+	sb->s_op = &ducndc_fs_super_ops;
 	bh = sb_bread(sb, DUCNDC_FS_SB_BLOCK_NR);
 
 	if (!bh) {
@@ -678,7 +685,7 @@ ducndc_fs_fill_super(
     ret = ducndc_fs_parse_options(sb, data);
 
     if (ret) {
-    	prr_err("ducndc_fs_fill_super: Failed to parse options, err code: %d\n", ret);
+    	pr_err("ducndc_fs_fill_super: Failed to parse options, err code: %d\n", ret);
     	return ret;
     }
 
