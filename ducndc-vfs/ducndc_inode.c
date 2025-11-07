@@ -213,7 +213,7 @@ ducndc_fs_new_inode(
 		return ERR_PTR(-ENOSPC);
 	}
 
-	inode = get_free_inode(sbi);
+	ino = get_free_inode(sbi);
 
 	if (!ino) {
 		return ERR_PTR(-ENOSPC);
