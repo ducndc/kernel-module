@@ -444,25 +444,24 @@ ducndc_fs_load_journal(
         return PTR_ERR(journal);		
 	}
 
-	journal_dev = new_decode_dev(journal_devnum);
-	journal = ducndc_fs_get_dev_journal(sb, journal_dev);
+	journal_dev_ro = bdev_read_only(journal->j_dev);
+    really_read_only = bdev_read_only(sb->s_bdev) | journal_dev_ro;
 
-	if (IS_ERR(journal)) {
+    if (journal_dev_ro && !sb_rdonly(sb)) {
         pr_err("journal device read-only, try mounting with '-o ro'\n");
         err = -EROFS;
-        goto err_out;		
-	}
+        goto err_out;
+    }
 
-	err = jbd2_journal_wipe(journal, !really_read_only);
+    err = jbd2_journal_wipe(journal, !really_read_only);
 
-	if (!err) {
-		err = jbd2_journal_load(journal);
-
-		if (err) {
+    if (!err) {
+        err = jbd2_journal_load(journal);
+        if (err) {
             pr_err("error loading journal, error %d\n", err);
-            goto err_out;			
-		}
-	}
+            goto err_out;
+        }
+    }
 
     sbi->journal = journal;
 
