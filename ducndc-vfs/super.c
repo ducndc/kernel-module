@@ -604,6 +604,7 @@ ducndc_fs_fill_super(
 	sbi = kzalloc(sizeof(struct ducndc_fs_sb_info), GFP_KERNEL);
 
 	if (!sbi) {
+        pr_err("kzalloc fail %d\n", __LINE__);
 		ret = -ENOMEM;
 		goto release;
 	}
@@ -620,6 +621,7 @@ ducndc_fs_fill_super(
     sbi->ifree_bitmap = kzalloc(sbi->nr_ifree_blocks * DUCNDC_FS_BLOCK_SIZE, GFP_KERNEL);
 
     if (!sbi->ifree_bitmap) {
+        pr_err("kzalloc fail %d\n", __LINE__);
     	ret = -ENOMEM;
     	goto free_sbi;
     }
@@ -629,18 +631,20 @@ ducndc_fs_fill_super(
     	bh = sb_bread(sb, idx);
 
     	if (!bh) {
+            pr_err("bh Failed %d\n", __LINE__);
     		ret = -EIO;
     		goto free_ifree;
     	}
 
-    	memcpy((void *)sbi->ifree_bitmap + i + DUCNDC_FS_BLOCK_SIZE, bh->b_data, DUCNDC_FS_BLOCK_SIZE);
+    	memcpy((void *)sbi->ifree_bitmap + i * DUCNDC_FS_BLOCK_SIZE, bh->b_data, DUCNDC_FS_BLOCK_SIZE);
     	brelse(bh);
     }
 
     bh = NULL;
-    sbi->ifree_bitmap = kzalloc(sbi->nr_bfree_blocks * DUCNDC_FS_BLOCK_SIZE, GFP_KERNEL);
+    sbi->bfree_bitmap = kzalloc(sbi->nr_bfree_blocks * DUCNDC_FS_BLOCK_SIZE, GFP_KERNEL);
 
     if (!sbi->bfree_bitmap) {
+        pr_err("bfree_bitmap%d\n", __LINE__);
     	ret = -ENOMEM;
     	goto free_ifree;
     }
@@ -650,11 +654,12 @@ ducndc_fs_fill_super(
     	bh = sb_bread(sb, idx);
 
     	if (!bh) {
+            pr_err("bh Failed %d\n", __LINE__);
     		ret = -EIO;
     		goto free_bfree;
     	}
 
-    	memcpy((void *)sbi->bfree_bitmap + i + DUCNDC_FS_BLOCK_SIZE, bh->b_data, DUCNDC_FS_BLOCK_SIZE);
+    	memcpy((void *)sbi->bfree_bitmap + i * DUCNDC_FS_BLOCK_SIZE, bh->b_data, DUCNDC_FS_BLOCK_SIZE);
     	brelse(bh);
     }
 
@@ -662,6 +667,7 @@ ducndc_fs_fill_super(
     root_inode = ducndc_fs_iget(sb, 1);
 
     if (IS_ERR(root_inode)) {
+        pr_err("root_inode Failed %d\n", __LINE__);
     	ret = PTR_ERR(root_inode);
     	goto free_bfree;
     }
@@ -677,6 +683,7 @@ ducndc_fs_fill_super(
     sb->s_root = d_make_root(root_inode);
 
     if (!sb->s_root) {
+        pr_err("s_root Failed %d\n", __LINE__);
     	ret = -ENOMEM;
     	goto iput;
     }
